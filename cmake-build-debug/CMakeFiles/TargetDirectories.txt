@@ -1,0 +1,3 @@
+/Users/tristanbouchard/Downloads/tp2_inf155-main-2/cmake-build-debug/CMakeFiles/tp2_inf155.dir
+/Users/tristanbouchard/Downloads/tp2_inf155-main-2/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/tristanbouchard/Downloads/tp2_inf155-main-2/cmake-build-debug/CMakeFiles/rebuild_cache.dir
