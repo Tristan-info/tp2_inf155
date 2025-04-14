@@ -170,13 +170,18 @@ void trier_spectres(t_recouvrement *rec, double seuil) {
 BMP *reconstruire_image(BMP *original, const t_recouvrement *rec,
                         double prop_garde, double prop_min,
                         char *fichier_log) {
-    if (!original || !rec || !fichier_log) return NULL;
+
+    if (original == NULL || rec == NULL || fichier_log == NULL) {
+        return NULL;
+    }
 
     BMP *resultat = BMP_Create(BMP_GetWidth(original), BMP_GetHeight(original), BMP_GetDepth(original));
-    if (!resultat) return NULL;
+    if (resultat == NULL) {
+        return NULL;
+    }
 
     FILE *log = fopen(fichier_log, "w");
-    if (!log) {
+    if (log == NULL) {
         BMP_Free(resultat);  // libérer BMP si le log échoue
         return NULL;
     }
@@ -185,12 +190,15 @@ BMP *reconstruire_image(BMP *original, const t_recouvrement *rec,
     fprintf(log, "Seuil: %.2f, Taille: (%d,%d), prop_garde: %.2f, prop_min: %.2f\n",
             seuil, rec->largeur_tuile, rec->hauteur_tuile, prop_garde, prop_min);
 
-    double i0 = (seuil == 0.0)
-                    ? rec->tab_spectres[0]->integrale_lumin_compl
-                    : rec->tab_spectres[0]->integrale_lumin_seuil;
+    double i0;
+    if (seuil == 0.0) {
+        i0 = rec->tab_spectres[0]->integrale_lumin_compl;
+    } else {
+        i0 = rec->tab_spectres[0]->integrale_lumin_seuil;
+    }
 
     int *est_copiee = calloc(rec->taille_tab_spectres, sizeof(int));
-    if (!est_copiee) {
+    if (est_copiee == NULL) {
         fclose(log);
         BMP_Free(resultat);
         return NULL;
@@ -199,7 +207,14 @@ BMP *reconstruire_image(BMP *original, const t_recouvrement *rec,
     // Étape 1 : copier tuiles principales
     for (int i = 0; i < rec->taille_tab_spectres; ++i) {
         t_spectre_gris *sp = rec->tab_spectres[i];
-        double ix = (seuil == 0.0) ? sp->integrale_lumin_compl : sp->integrale_lumin_seuil;
+
+        double ix;
+        if (seuil == 0.0) {
+            ix = sp->integrale_lumin_compl;
+        } else {
+            ix = sp->integrale_lumin_seuil;
+        }
+
         double R = ix / i0;
 
         if (R > prop_garde) {
@@ -214,18 +229,29 @@ BMP *reconstruire_image(BMP *original, const t_recouvrement *rec,
 
     // Étape 2 : copier tuiles voisines
     for (int i = 0; i < rec->taille_tab_spectres; ++i) {
-        if (est_copiee[i]) continue;  // déjà copiée à l'étape 1
+        if (est_copiee[i] == 1) {
+            continue;
+        }
 
         t_spectre_gris *sp = rec->tab_spectres[i];
-        double ix = (seuil == 0.0) ? sp->integrale_lumin_compl : sp->integrale_lumin_seuil;
+
+        double ix;
+        if (seuil == 0.0) {
+            ix = sp->integrale_lumin_compl;
+        } else {
+            ix = sp->integrale_lumin_seuil;
+        }
+
         double R = ix / i0;
 
         if (R <= prop_garde && R > prop_min) {
             for (int j = 0; j < rec->taille_tab_spectres; ++j) {
-                if (est_copiee[j] &&
+                if (est_copiee[j] == 1 &&
                     tuiles_voisines(&sp->tuile, &rec->tab_spectres[j]->tuile)) {
+
                     copier_tuile_a_image(resultat, original, &sp->tuile);
                     est_copiee[i] = 1;
+
                     int x, y;
                     get_offsets_tuile(&sp->tuile, &x, &y);
                     fprintf(log, "%d,%d,%d,%.4f,%.4f\n", sp->tuile.id_enum, x, y, ix, R);
